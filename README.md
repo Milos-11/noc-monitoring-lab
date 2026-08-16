@@ -1,20 +1,19 @@
 # NOC Monitoring Lab
 
-Laboratorio práctico de monitorización de sistemas y redes desarrollado con Python y Linux.
+Laboratorio práctico de monitorización de sistemas, redes y servicios desarrollado con Python y Linux.
 
-El proyecto simula tareas básicas de un entorno NOC (Network Operations Center), realizando comprobaciones de disponibilidad de hosts y servicios, generando alertas y registrando los resultados en archivos de log.
+El proyecto simula algunas tareas básicas de un entorno NOC (Network Operations Center), incluyendo comprobación de disponibilidad de hosts, monitorización de servicios TCP, persistencia de estados y detección de incidentes y recuperaciones.
 
 ## Objetivos
 
-Este laboratorio tiene como objetivos:
-
-- Comprobar la disponibilidad de hosts mediante `ping`.
-- Monitorizar diferentes hosts de forma automatizada.
-- Comprobar la disponibilidad de servicios mediante puertos TCP.
-- Generar estados de monitorización `OK` y `CRITICAL`.
-- Registrar eventos con fecha y hora.
-- Practicar automatización de tareas de monitorización con Python.
-- Utilizar Git y GitHub para control de versiones y documentación del proyecto.
+- Monitorizar la disponibilidad de diferentes hosts mediante ICMP/ping.
+- Comprobar la disponibilidad de servicios mediante conexiones TCP.
+- Mantener el estado conocido de cada elemento monitorizado.
+- Detectar cambios entre estados.
+- Identificar nuevos incidentes.
+- Detectar recuperaciones de servicios.
+- Registrar los resultados de las comprobaciones.
+- Utilizar Git y GitHub siguiendo un flujo de trabajo basado en ramas y Pull Requests.
 
 ## Tecnologías utilizadas
 
@@ -22,16 +21,110 @@ Este laboratorio tiene como objetivos:
 - Linux / Ubuntu
 - Git
 - GitHub
+- TCP/IP
+- ICMP
+- JSON
+- Sockets Python
 - Bash
-- `subprocess`
-- `socket`
-- ICMP / `ping`
-- TCP
-- Logging
 
-## Estructura del proyecto
+## Funcionalidades
+
+### 1. Monitorización de hosts
+
+El laboratorio comprueba la disponibilidad de:
+
+- `8.8.8.8`
+- `1.1.1.1`
+- `192.0.2.1`
+
+Ejemplo:
 
 ```text
+[OK] 8.8.8.8 responde
+[OK] 1.1.1.1 responde
+[ALERTA] 192.0.2.1 no responde
+
+Monitorización de servicios TCP
+
+También se puede comprobar la disponibilidad de un servicio TCP:
+
+127.0.0.1:8080
+
+Para realizar la prueba se utilizó un servidor HTTP de Python:
+
+python3 -m http.server 8080
+
+La conectividad del puerto se comprobó mediante:
+
+nc -zv 127.0.0.1 8080
+Detección de estados
+
+El monitor mantiene el último estado conocido de cada host o servicio mediante un archivo JSON.
+
+Ejemplo:
+
+{
+    "8.8.8.8": "OK",
+    "1.1.1.1": "OK",
+    "192.0.2.1": "CRITICAL",
+    "127.0.0.1:8080": "CRITICAL"
+}
+
+Esto permite comparar el estado anterior con el estado actual.
+
+Estados
+OK
+CRITICAL
+
+Cuando el estado permanece igual:
+
+[SIN CAMBIO] 127.0.0.1:8080: OK
+
+Cuando un servicio deja de estar disponible:
+
+[INCIDENTE] 127.0.0.1:8080: OK -> CRITICAL
+
+Cuando el servicio vuelve a estar disponible:
+
+[RECOVERY] 127.0.0.1:8080: CRITICAL -> OK
+Flujo de monitorización
+             Monitorización
+                    |
+          +---------+---------+
+          |                   |
+        Hosts              Servicios
+          |                   |
+        ICMP                 TCP
+          |                   |
+          +---------+---------+
+                    |
+             Estado actual
+                    |
+             Comparación
+                    |
+          +---------+---------+
+          |         |         |
+      SIN CAMBIO INCIDENTE RECOVERY
+Scripts
+monitor.py
+
+Realiza una comprobación básica de disponibilidad de hosts mediante ping.
+
+monitor_with_log.py
+
+Versión avanzada del monitor que incorpora:
+
+persistencia de estados;
+registro de resultados;
+detección de cambios de estado;
+detección de incidentes;
+detección de recuperaciones;
+monitorización de servicios TCP.
+port_monitor.py
+
+Comprueba la disponibilidad de un puerto TCP concreto mediante sockets.
+
+Estructura del proyecto
 noc-monitoring-lab/
 │
 ├── .gitignore
@@ -41,110 +134,126 @@ noc-monitoring-lab/
 ├── port_monitor.py
 │
 └── logs/
-    └── monitoring.log
+    ├── monitoring.log
+    └── status.json
 
+La carpeta logs/ contiene archivos generados durante la ejecución y está excluida del repositorio mediante .gitignore.
 
-Scripts
-monitor.py
-
-Realiza una comprobación básica de disponibilidad de varios hosts mediante ping.
-
-Actualmente monitoriza:
-
-8.8.8.8
-1.1.1.1
-192.0.2.1
-
-Ejemplo de salida:
-
-[OK] 8.8.8.8 responde
-[OK] 1.1.1.1 responde
-[ALERTA] 192.0.2.1 no responde
-
-La dirección 192.0.2.1 se utiliza como destino de prueba para simular una incidencia de disponibilidad.
-
-port_monitor.py
-
-Comprueba la disponibilidad de un servicio TCP mediante una conexión socket.
-
-Ejemplo:
-
-[OK] 8.8.8.8:53 está abierto
-
-El puerto 53 se utiliza como ejemplo de servicio DNS.
-
-monitor_with_log.py
-
-Amplía la monitorización de hosts incorporando:
-
-Fecha y hora del evento.
-Estado de monitorización.
-Registro persistente en un archivo de log.
-Estados OK y CRITICAL.
-
-Ejemplo:
-
-2026-08-14 17:29:35 | 8.8.8.8 | OK
-2026-08-14 17:29:35 | 1.1.1.1 | OK
-2026-08-14 17:29:45 | 192.0.2.1 | CRITICAL
 Ejecución
-Monitorización básica
+
+Clonar el repositorio:
+
+git clone https://github.com/Milos-11/noc-monitoring-lab.git
+
+Entrar en el directorio:
+
+cd noc-monitoring-lab
+
+Ejecutar el monitor básico:
+
 python3 monitor.py
-Monitorización de puertos
-python3 port_monitor.py
-Monitorización con registro de eventos
+
+Ejecutar el monitor avanzado:
+
 python3 monitor_with_log.py
 
-El archivo de log se genera en:
+Comprobar un puerto TCP:
+
+python3 port_monitor.py
+Prueba de incidente y recuperación
+
+Para probar la monitorización de servicios se utilizó un servidor HTTP local:
+
+python3 -m http.server 8080
+
+Con el servicio activo:
+
+127.0.0.1:8080 -> OK
+
+Al detener el servidor:
+
+OK -> CRITICAL
+
+El monitor genera:
+
+[INCIDENTE] 127.0.0.1:8080: OK -> CRITICAL
+
+Al volver a iniciar el servidor:
+
+CRITICAL -> OK
+
+El monitor genera:
+
+[RECOVERY] 127.0.0.1:8080: CRITICAL -> OK
+Registro de eventos
+
+Los resultados se almacenan en:
 
 logs/monitoring.log
-Conceptos de NOC practicados
 
-Este laboratorio permite practicar conceptos básicos relacionados con:
+Ejemplo:
 
-Host availability monitoring
-Service availability monitoring
-Network connectivity
-TCP port monitoring
-Event logging
-Alert classification
-Incident detection
-Automation
-Troubleshooting
+2026-08-14 17:22:39 | 8.8.8.8 | OK
+2026-08-14 17:22:39 | 1.1.1.1 | OK
+2026-08-14 17:22:49 | 192.0.2.1 | ALERTA
+
+El estado actual se mantiene en:
+
+logs/status.json
+
+Estos archivos son generados durante la ejecución y no se incluyen en GitHub.
+
 Control de versiones
 
-El proyecto utiliza Git para el control de versiones.
+El proyecto utiliza Git siguiendo un flujo basado en ramas:
 
-Primer commit:
+main
+ |
+ +-- feature/state-change-detection
+             |
+             +-- desarrollo
+             |
+             +-- pruebas
+             |
+             +-- commit
+             |
+             +-- Pull Request
+             |
+             +-- merge
+             |
+             v
+           main
+Competencias demostradas
 
-9539c21 - Initial NOC monitoring lab
+Este laboratorio permite demostrar conocimientos prácticos relacionados con:
 
-Repositorio:
-
-GitHub: https://github.com/Milos-11/noc-monitoring-lab
-
+Network Monitoring
+Service Monitoring
+TCP/IP
+ICMP
+Python scripting
+Linux
+Troubleshooting
+State persistence
+Incident detection
+Recovery detection
+Log management
+Git
+GitHub
+Pull Requests
+Branching
+Control de versiones
 Próximas mejoras
 
-El laboratorio continuará evolucionando con nuevas funcionalidades:
+Posibles ampliaciones del laboratorio:
 
- Detección de cambios de estado.
- Registro de eventos de recuperación.
- Monitorización periódica automática.
- Mejora de niveles de severidad.
- Monitorización de múltiples puertos.
- Análisis de logs.
- Generación de estadísticas.
- Sistema de alertas.
- Integración de conceptos de IA para asistencia en el análisis de incidencias.
-Objetivo profesional
-
-Este proyecto forma parte de un portfolio práctico orientado al desarrollo de competencias para puestos de:
-
-NOC Operator
-Técnico de Monitorización
-Operador de Sistemas
-Técnico de Sistemas Junior
-Network Monitoring
-IT Operations
-
-El objetivo es demostrar mediante proyectos prácticos conocimientos de Linux, Python, redes, monitorización, troubleshooting, automatización y Git/GitHub.
+monitorización periódica automática;
+configuración de hosts desde un archivo externo;
+monitorización de múltiples puertos;
+niveles de severidad;
+generación de métricas;
+alertas por correo electrónico;
+integración con una API;
+dashboard de monitorización;
+Dockerización del laboratorio;
+integración con herramientas de monitorización como Prometheus o Grafana.
